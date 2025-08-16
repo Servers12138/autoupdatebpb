@@ -26,8 +26,8 @@ jobs:
       # 🔥 自动打补丁步骤
       - name: 给 _worker.js 打补丁（添加 ip.txt 读取功能）
         run: |
-          echo -e "\033[34m[给 _worker.js 打补丁]\033[0m"
-          sed -i '1i\
+          if [ -f "_worker.js" ]; then
+            sed -i '1i\
 // ====== 自动读取 ip.txt 功能开始 ======\n\
 async function getIPList() {\n\
   try {\n\
@@ -40,11 +40,12 @@ async function getIPList() {\n\
 }\n\
 // ====== 自动读取 ip.txt 功能结束 ======\n\
 ' _worker.js
+          fi
 
       - name: 提交更改到仓库
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "自动更新 Worker 代码"
+          git commit -m "自动更新 Worker 代码" || echo "No changes to commit"
           git push
