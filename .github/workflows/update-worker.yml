@@ -1,0 +1,50 @@
+name: Update Worker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # 每6小时运行一次
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查仓库
+        uses: actions/checkout@v3
+
+      - name: 删除旧文件
+        run: |
+          rm -rf ./*
+
+      - name: 下载并解压 BPB-Worker-Panel
+        run: |
+          curl -L https://github.com/xyTom/bpb-worker-panel/archive/refs/heads/main.zip -o main.zip
+          unzip -o main.zip
+          mv bpb-worker-panel-main/* ./
+          rm -rf bpb-worker-panel-main main.zip
+
+      # 🔥 自动打补丁步骤
+      - name: 给 _worker.js 打补丁（添加 ip.txt 读取功能）
+        run: |
+          echo -e "\033[34m[给 _worker.js 打补丁]\033[0m"
+          sed -i '1i\
+// ====== 自动读取 ip.txt 功能开始 ======\n\
+async function getIPList() {\n\
+  try {\n\
+    let resp = await fetch("https://private.zzjay.pp.ua/ip.txt");\n\
+    let text = await resp.text();\n\
+    return text.split("\\n").filter(line => line.trim() !== "");\n\
+  } catch (e) {\n\
+    return [];\n\
+  }\n\
+}\n\
+// ====== 自动读取 ip.txt 功能结束 ======\n\
+' _worker.js
+
+      - name: 提交更改到仓库
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "自动更新 Worker 代码"
+          git push
